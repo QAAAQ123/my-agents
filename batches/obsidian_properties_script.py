@@ -49,71 +49,42 @@ def create_prompt(batch: list[Path], used_keywords: dict) -> str:
     content_list = create_content_list(batch)
 
     prompt = f"""
-        You are responsible for analyzing the content of Obsidian Markdown files and generating keywords for each file.
+        Analyze Obsidian Markdown files and generate keywords for each file.
 
-        ### Previous Overall Keywords
+        ### Determine Keywords Based on Directory Path and File Name (TOP PRIORITY)
+        * The directory path and file name are the PRIMARY basis for keyword decisions
+        * Decide keywords from the directory path and file name FIRST
+        * Use file content only as supplementary evidence when the path and name are insufficient
+        * Example: "/Dev/Java/Spring.md" → ["Java","SpringBoot"]
+
+        ### Existing Keywords
 ```json
         {used_keywords}
 ```
 
-        Prioritize using existing keywords
+        ### Base Keywords
+        Java, Investment, CodingTest, Python, ComputerScience, SQL, Pandas, DataBase, RDB, NoSQL, Finance, BackEnd, Infra, DevOps, DataEngineering, AI, Git, TestCode, Logging, Network, Deploy, BlockChain, Redis, Job, School, Project,FastAPI, SpringBoot, Docker
 
-        ### Purpose
-        * Generate keywords based on the core topic/content of the file
-        * Use the same keywords for identical or similar topics
-        * Minimize keyword variety and maintain consistency
-
-        ### Very Important
-        * For development-related documents such as tech stacks or languages, prioritize development-related keywords
-        * Example: ["Java", "Spring Boot", "Tomcat"]
-
-        ### Keyword Rules
-        1. Prioritize using existing keywords that are semantically appropriate to the content
-        2. Do not create new keywords similar to existing keywords
-        3. Do not create new keywords if existing keywords can express the core content
-        4. Only create new keywords for clear and important topics that are difficult to express with existing keywords
-        5. Do not create new keywords due to synonyms, similar terms, singular/plural, or expression differences
-        6. Do not list detailed content, focus on core topics
-        7. Prioritize meaningful, reusable keywords over overly generic keywords
-        8. Use only keywords directly related to the file content
-        9. Keywords must be written in English
-        10. Every file must have at least 1 keyword (empty array is not allowed)
+        ### Rules
+        1. Prioritize base keywords and existing keywords; create a new keyword only if none fit
+        2. Each keyword must be a single word without spaces (CamelCase or PascalCase)
+        3. 1 to 5 keywords per file (recommended 3), never empty
+        4. Use English only
 
         ### Output Format
-
-        Output only the JSON format below.
+        Output JSON only, with no other text or Markdown. Keys are absolute file paths. Include any new keywords in `used_keywords` (no duplicates).
 
 ```json
         {{
-            "file_path1": ["keyword1", "keyword2"],
-            "file_path2": ["keyword1", "keyword3"],
-            "used_keywords": ["keyword1", "keyword2", "keyword3"]
+            "file_path1": ["keyword1","keyword2"],
+            "file_path2": ["keyword1","keyword3"],
+            "used_keywords": ["keyword1","keyword2","keyword3"]
         }}
 ```
 
-        ### Output Rules
-
-        * Keywords must be written in English
-        * Each file's key is the absolute path
-        * Each file's value is the list of keywords for that file
-        * No duplicates in `used_keywords`
-        * When using existing keywords, keep the original text
-        * When creating new keywords, include them in `used_keywords`
-        * Do not output any text, Markdown, or comments other than JSON
-        * Maximum number of keywords per file: 5
-        * Recommended number of keywords per file: 3
-        * If no suitable keyword exists, even 1 keyword is acceptable
-        * Every file must include at least 1 keyword (empty array is not allowed)
-        * Even if no suitable keyword exists, always assign at least the closest matching keyword
-
         ### Files to Analyze
 
-        #### File Contents
-
         {content_list}
-
-        Analyze each file independently.
-        Use the same keyword for the same concept.
 
     """
 
@@ -138,7 +109,7 @@ def clean_result(qroq_result: str) -> tuple[dict, list[str]]:
     validated, properties, used_keywords = validate_keyword_result(qroq_result)
 
     if not validated:
-        raise ValueError("Groq가 잘못된 형식의 응답을 반환했습니다.")
+        raise ValueError("GenAi가 잘못된 형식의 응답을 반환했습니다.")
 
     return properties, used_keywords
 
@@ -238,7 +209,7 @@ def main():
     """
     print(f"파일 루트 경로: {ROOT_PATH}")
     paths = list(ROOT_PATH.rglob("*.md"))
-    print(f"파일 개수: {len(paths)}")
+    #print(f"파일 개수: {len(paths)}")
     batches = [paths[i: i+10] for i in range(0, len(paths), 10)]
     print(f"배치 개수: {len(batches)}")
 
